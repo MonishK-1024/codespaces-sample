@@ -1,8 +1,18 @@
 FROM mcr.microsoft.com/devcontainers/python:3.12-bullseye
 
 # ── Extra tools ──────────────────────────────────────────────────────────────
-# jq: used to pretty-print NDJSON egress logs (one object per line)
-RUN apt-get update && apt-get install -y --no-install-recommends jq \
+# jq  : pretty-print NDJSON egress logs
+# gh  : GitHub CLI — allows `gh codespace rebuild` from inside the container
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        jq \
+        curl \
+        gnupg \
+    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+        > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update && apt-get install -y --no-install-recommends gh \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Strip sudo from the default vscode user ───────────────────────────────────

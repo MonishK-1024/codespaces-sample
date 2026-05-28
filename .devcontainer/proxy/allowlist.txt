@@ -22,7 +22,8 @@ objects.githubusercontent.com
 codeload.github.com
 raw.githubusercontent.com
 
-# ── Python package index (pip install) ───────────────────────────────────────
+# ── GitHub CLI (gh) ──────────────────────────────────────────────────────────
+cli.github.com
 pypi.org
 files.pythonhosted.org
 bootstrap.pypa.io
