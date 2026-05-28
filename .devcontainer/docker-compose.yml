@@ -32,17 +32,14 @@ services:
       - proxy_logs:/var/log/egress
     restart: unless-stopped
     healthcheck:
-      test:
-        [
-          "CMD",
-          "python3",
-          "-c",
-          "import socket; s=socket.socket(); s.settimeout(2); s.connect(('127.0.0.1',7890)); s.close()"
-        ]
-      interval: 5s
-      timeout: 3s
+      # create_connection is cleaner than manual socket — raises on failure, no exit code needed
+      test: ["CMD", "python3", "-c", "import socket; socket.create_connection(('localhost', 7890), timeout=3).close()"]
+      interval: 10s
+      timeout: 5s
       retries: 12
-      start_period: 20s
+      # mitmproxy needs ~10-15s to start and generate its CA cert on first run;
+      # failures during start_period are ignored.
+      start_period: 60s
 
   # ─── Dev Container ───────────────────────────────────────────────────────────
   devcontainer:
