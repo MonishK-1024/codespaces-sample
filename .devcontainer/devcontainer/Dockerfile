@@ -3,7 +3,11 @@ FROM mcr.microsoft.com/devcontainers/python:3.12-bullseye
 # ── Extra tools ──────────────────────────────────────────────────────────────
 # jq  : pretty-print NDJSON egress logs
 # gh  : GitHub CLI — allows `gh codespace rebuild` from inside the container
-RUN apt-get update && apt-get install -y --no-install-recommends \
+#
+# The devcontainers/python base image ships a yarn apt source whose GPG key
+# has expired. Remove it before running apt-get update or the build fails.
+RUN find /etc/apt/sources.list.d/ -name "*yarn*" -delete \
+    && apt-get update && apt-get install -y --no-install-recommends \
         jq \
         curl \
         gnupg \
