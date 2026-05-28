@@ -33,5 +33,19 @@ fi
 # (It was already created with chmod 444 in the Dockerfile, this is belt-and-suspenders.)
 chmod 444 /etc/profile.d/proxy-settings.sh 2>/dev/null || true
 
+# ── Protect devcontainer config from being edited inside the container ────────
+# .devcontainer/ is part of the workspace bind mount. We strip write permission
+# for non-root users so developers (and Copilot/Claude Code) cannot tamper with
+# proxy rules, allowlist, or container config from within VS Code or the terminal.
+# Root on the Codespace VM can still modify files if legitimately needed.
+#
+# We try both possible workspace paths (Codespaces and local dev).
+for DCPATH in /workspace/.devcontainer /workspaces/*/.devcontainer; do
+    if [ -d "$DCPATH" ]; then
+        chmod -R go-w "$DCPATH"
+        echo "[entrypoint] $DCPATH set to read-only for non-root users."
+    fi
+done
+
 echo "[entrypoint] Dev container starting."
 exec "$@"

@@ -1,5 +1,10 @@
 FROM mcr.microsoft.com/devcontainers/python:3.12-bullseye
 
+# ── Extra tools ──────────────────────────────────────────────────────────────
+# jq: used to pretty-print NDJSON egress logs (one object per line)
+RUN apt-get update && apt-get install -y --no-install-recommends jq \
+    && rm -rf /var/lib/apt/lists/*
+
 # ── Strip sudo from the default vscode user ───────────────────────────────────
 # The devcontainers base image grants passwordless sudo — remove it so developers
 # cannot escalate to root and modify proxy config or CA trust.

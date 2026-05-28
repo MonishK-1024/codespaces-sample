@@ -7,7 +7,9 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  SVCLink Dev Container — post-create setup"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-cd /workspace
+# Codespaces mounts the repo at /workspaces/<repo-name>
+WORKSPACE="${CODESPACE_VSCODE_FOLDER:-/workspaces/codespaces-sample}"
+cd "$WORKSPACE"
 
 # ── Install Python dependencies ───────────────────────────────────────────────
 if [ -f requirements.txt ]; then
@@ -45,7 +47,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Ready. Key information:"
 echo ""
 echo "  Egress filtering : ACTIVE — only allowlisted domains reachable"
-echo "  Egress logs      : /var/log/egress/egress.log  (read-only, view with 'tail -f')"
+  echo "  Egress logs      : tail -f /var/log/egress/egress.log | jq ."
 echo "  Secrets CLI      : devsecret --help"
 echo "  Allowlist        : .devcontainer/proxy/allowlist.txt  (edit in repo, rebuild to apply)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

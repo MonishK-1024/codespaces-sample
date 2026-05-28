@@ -2,7 +2,7 @@
   "name": "SVCLink Dev",
   "dockerComposeFile": "docker-compose.yml",
   "service": "devcontainer",
-  "workspaceFolder": "/workspace",
+  "workspaceFolder": "/workspaces/codespaces-sample",
   "remoteUser": "vscode",
   "shutdownAction": "stopCompose",
 
@@ -10,7 +10,7 @@
   "initializeCommand": "mkdir -p /tmp/devuser-secrets && chmod 700 /tmp/devuser-secrets",
 
   // Runs inside devcontainer after creation — installs Python deps
-  "postCreateCommand": "bash /workspace/.devcontainer/devcontainer/post-create.sh",
+  "postCreateCommand": "bash /workspaces/codespaces-sample/.devcontainer/devcontainer/post-create.sh",
 
   "customizations": {
     "vscode": {

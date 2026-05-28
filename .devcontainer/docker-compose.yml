@@ -49,11 +49,8 @@ services:
     networks:
       - internal   # ONLY on the internal network — internet only via proxy
     volumes:
-      # Workspace: repo root is one directory above .devcontainer/
-      - type: bind
-        source: ..
-        target: /workspace
-        consistency: cached
+      # NOTE: Codespaces injects the workspace mount automatically via its own
+      # docker-compose.codespaces.yml overlay — do NOT define it here or it conflicts.
       # Proxy CA cert — read-only so devuser cannot tamper
       - proxy_certs:/opt/mitmproxy-certs:ro
       # Egress logs — read-only for devuser (observe, not alter)
