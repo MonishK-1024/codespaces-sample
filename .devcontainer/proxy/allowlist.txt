@@ -1,0 +1,39 @@
+# =============================================================================
+# Egress allowlist — only domains listed here can be reached from the devcontainer.
+# Lines starting with # are comments. Wildcards (*) match a single subdomain level.
+# Add entries carefully — every new domain expands the attack surface.
+# =============================================================================
+
+# ── AI / Copilot endpoints ───────────────────────────────────────────────────
+api.openai.com
+*.openai.com
+
+api.anthropic.com
+*.anthropic.com
+
+*.githubcopilot.com
+copilot-proxy.githubusercontent.com
+
+# ── GitHub (Copilot auth + git operations) ───────────────────────────────────
+github.com
+api.github.com
+*.github.com
+objects.githubusercontent.com
+codeload.github.com
+raw.githubusercontent.com
+
+# ── Python package index (pip install) ───────────────────────────────────────
+pypi.org
+files.pythonhosted.org
+bootstrap.pypa.io
+
+# ── VS Code extension marketplace (extension installs inside devcontainer) ───
+marketplace.visualstudio.com
+*.vscode-cdn.net
+*.gallery.vsassets.io
+*.gallerycdn.vsassets.io
+vscode.download.prss.microsoft.com
+
+# ── TEST ONLY — remove before production use ─────────────────────────────────
+google.com
+www.google.com

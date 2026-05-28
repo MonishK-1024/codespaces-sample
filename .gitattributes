@@ -1,0 +1,22 @@
+# Force LF line endings for all files that run inside Linux containers.
+# Without this, Windows git clients may check out files with CRLF, breaking
+# bash shebangs and Python scripts inside the devcontainer.
+
+* text=auto
+
+# Shell scripts and tools
+*.sh            text eol=lf
+devsecret       text eol=lf
+
+# Container config
+Dockerfile      text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+
+# Python
+*.py            text eol=lf
+
+# Config / data files
+*.json          text eol=lf
+*.txt           text eol=lf
+*.md            text eol=lf

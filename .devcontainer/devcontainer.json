@@ -1,0 +1,66 @@
+{
+  "name": "SVCLink Dev",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "vscode",
+  "shutdownAction": "stopCompose",
+
+  // Runs on Codespace VM before containers start — creates secrets dir from Codespace secrets
+  "initializeCommand": "mkdir -p /tmp/devuser-secrets && chmod 700 /tmp/devuser-secrets",
+
+  // Runs inside devcontainer after creation — installs Python deps
+  "postCreateCommand": "bash /workspace/.devcontainer/devcontainer/post-create.sh",
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        // Hide sensitive paths from file explorer and search
+        "files.exclude": {
+          "/run/**": true,
+          "/opt/mitmproxy-certs/**": true,
+          "/var/log/egress/**": true
+        },
+        "search.exclude": {
+          "/run/**": true,
+          "/opt/mitmproxy-certs/**": true
+        },
+        // Restrict Claude Code filesystem access to workspace only
+        "claude.allowedDirectories": ["/workspace"],
+        // Copilot: disable reading instruction files that might expose secrets
+        "github.copilot.chat.codeGeneration.useInstructionFiles": false,
+        // Prevent Copilot from indexing the entire filesystem
+        "github.copilot.enable": {
+          "*": true,
+          "/run": false,
+          "/opt/mitmproxy-certs": false
+        },
+        "terminal.integrated.env.linux": {
+          "HTTP_PROXY": "http://proxy:7890",
+          "HTTPS_PROXY": "http://proxy:7890",
+          "http_proxy": "http://proxy:7890",
+          "https_proxy": "http://proxy:7890",
+          "NO_PROXY": "localhost,127.0.0.1,proxy",
+          "no_proxy": "localhost,127.0.0.1,proxy",
+          "REQUESTS_CA_BUNDLE": "/etc/ssl/certs/ca-certificates.crt",
+          "SSL_CERT_FILE": "/etc/ssl/certs/ca-certificates.crt"
+        }
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter"
+      ]
+    }
+  },
+
+  // Prevent the internal proxy port from being forwarded publicly
+  "portsAttributes": {
+    "7890": {
+      "label": "Egress Proxy (internal — do not expose)",
+      "onAutoForward": "ignore"
+    }
+  },
+
+  "forwardPorts": []
+}

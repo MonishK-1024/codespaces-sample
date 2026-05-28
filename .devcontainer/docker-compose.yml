@@ -1,0 +1,85 @@
+networks:
+  # Devcontainer is ONLY on this network — no direct route to the internet.
+  # Docker's internal:true removes the default gateway for this network.
+  internal:
+    driver: bridge
+    internal: true
+
+  # Proxy is on this network so it can reach the internet on behalf of the devcontainer.
+  proxy_external:
+    driver: bridge
+
+volumes:
+  proxy_certs:     # mitmproxy CA cert — written by proxy, read by devcontainer
+  proxy_logs:      # egress logs — written by proxy, read-only in devcontainer
+
+services:
+
+  # ─── Egress Proxy ────────────────────────────────────────────────────────────
+  proxy:
+    build:
+      context: ./proxy
+      dockerfile: Dockerfile
+    networks:
+      - internal         # receives traffic from devcontainer
+      - proxy_external   # sends allowlisted traffic to the internet
+    volumes:
+      # Allowlist is read-only inside the proxy container (comes from the repo)
+      - ./proxy/allowlist.txt:/etc/mitmproxy/allowlist.txt:ro
+      # CA cert dir: mitmproxy writes its cert here on first start
+      - proxy_certs:/data/mitmproxy
+      # Egress logs written here
+      - proxy_logs:/var/log/egress
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import socket; s=socket.socket(); s.settimeout(2); s.connect(('127.0.0.1',7890)); s.close()"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  # ─── Dev Container ───────────────────────────────────────────────────────────
+  devcontainer:
+    build:
+      context: ./devcontainer
+      dockerfile: Dockerfile
+    networks:
+      - internal   # ONLY on the internal network — internet only via proxy
+    volumes:
+      # Workspace: repo root is one directory above .devcontainer/
+      - type: bind
+        source: ..
+        target: /workspace
+        consistency: cached
+      # Proxy CA cert — read-only so devuser cannot tamper
+      - proxy_certs:/opt/mitmproxy-certs:ro
+      # Egress logs — read-only for devuser (observe, not alter)
+      - proxy_logs:/var/log/egress:ro
+      # Developer secrets — populated by initializeCommand on the Codespace VM,
+      # read-only inside the container. Copilot/Claude Code cannot access /run/
+      - type: bind
+        source: ${SECRETS_HOST_PATH:-/tmp/devuser-secrets}
+        target: /run/devuser-secrets
+        read_only: true
+    environment:
+      # Force all traffic through the proxy (proxy hostname resolves via Docker DNS)
+      - HTTP_PROXY=http://proxy:7890
+      - HTTPS_PROXY=http://proxy:7890
+      - http_proxy=http://proxy:7890
+      - https_proxy=http://proxy:7890
+      - NO_PROXY=localhost,127.0.0.1,proxy
+      - no_proxy=localhost,127.0.0.1,proxy
+      # Python / curl use these for CA bundle
+      - REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+    depends_on:
+      proxy:
+        condition: service_healthy
+    # Keeps the container alive until VS Code Server connects (injected by Codespaces)
+    command: sleep infinity
