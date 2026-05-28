@@ -1,17 +1,23 @@
-FROM mcr.microsoft.com/devcontainers/python:3.12-bullseye
+FROM python:3.12-slim-bookworm
 
-# ── Extra tools ──────────────────────────────────────────────────────────────
-# jq  : pretty-print NDJSON egress logs
-# gh  : GitHub CLI — allows `gh codespace rebuild` from inside the container
-#
-# The devcontainers/python base image ships a yarn apt source whose GPG key
-# has expired. Remove it before running apt-get update or the build fails.
-RUN find /etc/apt/sources.list.d/ -name "*yarn*" -delete \
-    && apt-get update && apt-get install -y --no-install-recommends \
-        jq \
+# Base system tools
+# git        : source control (required by VS Code)
+# curl/gnupg : needed to add the gh CLI apt repo
+# jq         : pretty-print NDJSON egress logs
+# procps     : ps, top -- useful for debugging
+# ca-certificates : trust store; updated by entrypoint with mitmproxy CA
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git \
         curl \
         gnupg \
-    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        jq \
+        procps \
+        ca-certificates \
+        libstdc++6 \
+    && rm -rf /var/lib/apt/lists/*
+
+# GitHub CLI
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
         | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
     && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
@@ -19,32 +25,31 @@ RUN find /etc/apt/sources.list.d/ -name "*yarn*" -delete \
     && apt-get update && apt-get install -y --no-install-recommends gh \
     && rm -rf /var/lib/apt/lists/*
 
-# ── Strip sudo from the default vscode user ───────────────────────────────────
-# The devcontainers base image grants passwordless sudo — remove it so developers
-# cannot escalate to root and modify proxy config or CA trust.
-RUN echo "" > /etc/sudoers.d/vscode \
-    && chmod 440 /etc/sudoers.d/vscode
+# Create vscode user (UID 1000, no sudo)
+# python:3.12-slim-bookworm does not ship a vscode user; Codespaces expects one.
+RUN groupadd --gid 1000 vscode \
+    && useradd --uid 1000 --gid 1000 --shell /bin/bash --create-home vscode
 
-# ── Create devsecrets group ───────────────────────────────────────────────────
+# Create devsecrets group
 # Only members of this group can read /run/devuser-secrets/.
 # The vscode user is added; Copilot/Claude Code run as vscode too but cannot
 # access the path because it is outside their configured allowedDirectories.
 RUN groupadd --system devsecrets \
     && usermod -aG devsecrets vscode
 
-# ── Directory layout ──────────────────────────────────────────────────────────
-# /run/devuser-secrets/ — bind-mounted read-only from Codespace VM secrets
+# Directory layout
+# /run/devuser-secrets/ -- bind-mounted read-only from Codespace VM secrets
 RUN mkdir -p /run/devuser-secrets \
     && chown root:devsecrets /run/devuser-secrets \
     && chmod 750 /run/devuser-secrets
 
-# /opt/mitmproxy-certs/ — proxy_certs volume is mounted here (read-only)
+# /opt/mitmproxy-certs/ -- proxy_certs volume is mounted here (read-only)
 RUN mkdir -p /opt/mitmproxy-certs
 
-# /etc/profile.d/proxy-settings.sh — sets proxy env for every interactive shell.
+# /etc/profile.d/proxy-settings.sh -- sets proxy env for every interactive shell.
 # Written by root, made read-only so vscode user cannot unset the proxy.
 RUN printf '%s\n' \
-    '# Managed by devcontainer — do not edit.' \
+    '# Managed by devcontainer -- do not edit.' \
     'export HTTP_PROXY=http://proxy:7890' \
     'export HTTPS_PROXY=http://proxy:7890' \
     'export http_proxy=http://proxy:7890' \
@@ -56,17 +61,17 @@ RUN printf '%s\n' \
     > /etc/profile.d/proxy-settings.sh \
     && chmod 444 /etc/profile.d/proxy-settings.sh
 
-# ── Tools ─────────────────────────────────────────────────────────────────────
+# Tools
 COPY devsecret /usr/local/bin/devsecret
 RUN chown root:root /usr/local/bin/devsecret \
     && chmod 755 /usr/local/bin/devsecret
 
-# ── Entrypoint ────────────────────────────────────────────────────────────────
+# Entrypoint
 COPY entrypoint.sh /usr/local/bin/devcontainer-entrypoint.sh
 RUN chown root:root /usr/local/bin/devcontainer-entrypoint.sh \
     && chmod 755 /usr/local/bin/devcontainer-entrypoint.sh
 
-# ── Docker ENV (inherited by all processes including VS Code extensions) ───────
+# Docker ENV (inherited by all processes including VS Code extensions)
 ENV HTTP_PROXY=http://proxy:7890 \
     HTTPS_PROXY=http://proxy:7890 \
     http_proxy=http://proxy:7890 \
